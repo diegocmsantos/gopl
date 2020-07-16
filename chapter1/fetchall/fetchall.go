@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -17,11 +18,14 @@ func main() {
 		go fetch(url, ch) // start a goroutine
 	}
 
+	var messages []string
 	for range os.Args[1:] {
-		fmt.Println(<-ch) // receive from channel ch
+		messages = append(messages, <-ch) // receive from channel ch
 	}
 
-	fmt.Printf("%.2fs elapsed time\n", time.Since(start).Seconds())
+	result := fmt.Sprintf("%.2fs elapsed time\n", time.Since(start).Seconds())
+	messages = append(messages, result)
+	saveResult(messages)
 
 }
 
@@ -42,4 +46,14 @@ func fetch(url string, ch chan<- string) {
 
 	secs := time.Since(start).Seconds()
 	ch <- fmt.Sprintf("%2.fs %7d %s", secs, nbytes, url)
+}
+
+func saveResult(messages []string) {
+	file, err := os.Create("results.txt")
+	defer file.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	file.Write([]byte(strings.Join(messages, "\n")))
 }
